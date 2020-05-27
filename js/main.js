@@ -1,4 +1,5 @@
 const IMG_URL = "https://image.tmdb.org/t/p/w185_and_h278_bestv2";
+const API_KEY = "2e8b7d6b0b4e7f8d95a28f931ea2f5e8";
 
 const leftMenu = document.querySelector('.left-menu')
 const hamburger = document.querySelector('.hamburger')
@@ -32,20 +33,26 @@ const renderCard = responce => {
       poster_path: poster, 
       vote_average: vote
     } = item;
-
-    console.log(item);
+    const posterIMG = poster ? IMG_URL + poster : 'img/no-poster.jpg';
+    // const backdropIMG = backdrop ? IMG_URL + backdrop : 'img/no-poster.jpg';
+    const backdropIMG = backdrop ? IMG_URL + backdrop : '';
+    
+    // console.log(item);
     const card = document.createElement ('li');
     card.classList.add('tv-shows__item');
     card.innerHTML = `
       <a href="#" class="tv-card">
         <span class="tv-card__vote">${vote}</span>
         <img class="tv-card__img"
-            src="${IMG_URL + poster}"
-            data-backdrop="${IMG_URL + backdrop}"
+            src="${posterIMG}"
+            data-backdrop="${backdropIMG}"
             alt="${title}">
         <h4 class="tv-card__head">${title}</h4>
       </a>
     `;
+    if (vote == '0') {
+      card.querySelector('.tv-card__vote').classList.add('hide')
+    };
     tvShowsList.append(card);
   });
 }
