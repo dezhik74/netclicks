@@ -17,6 +17,9 @@ const modalLink = document.querySelector('.modal__link');
 const searchForm = document.querySelector('.search__form');
 const searchFormInput = document.querySelector('.search__form-input');
 const posterWrapper = document.querySelector('.poster__wrapper');
+const dropdown = document.querySelectorAll('.dropdown');
+const modalContent = document.querySelector ('.modal__content');
+const pagination = document.querySelector('.pagination'); 
 
 
 
@@ -46,22 +49,38 @@ const DBService = class {
   }
   
   getSearchResult = query => {
-    return this.getData (`${SERVER}/search/tv?api_key=${API_KEY}&query=${query}&language=ru-Ru`)
+    this.temp = `${SERVER}/search/tv?api_key=${API_KEY}&query=${query}&language=ru-Ru`;
+    return this.getData (this.temp);
+  }
+
+  getNextPage = page => {
+    this.getData (this.temp + '&page=' + page);
   }
 
   getTvShow = id => {
     return this.getData (`${SERVER}/tv/${id}?api_key=${API_KEY}&language=ru-Ru`)
   }
+
+  getTopRated = () => this.getData(`${SERVER}/tv/top_rated?api_key=${API_KEY}&language=ru-RU`)
+  
+  getPopular = () => this.getData(`${SERVER}/tv/popular?api_key=${API_KEY}&language=ru-RU`)
+  
+  getToday = () => this.getData(`${SERVER}/tv/airing_today?api_key=${API_KEY}&language=ru-RU`)
+  
+  getWeek = () => this.getData(`${SERVER}/tv/on_the_air?api_key=${API_KEY}&language=ru-RU`)
+
 }
+
+dbService = new DBService ();
 
 // console.log(new DBService().getSearchResult('Папа'));
 
-const renderCard = responce => {
+const renderCard = (responce, target) => {
 
   tvShowsList.textContent='';
 
   if (responce.results.length) {
-    tvShowsHead.textContent = 'Результат поиска';
+    tvShowsHead.textContent = target ? target.textContent : 'Результат поиска';
     responce.results.forEach(item => {
       const {
         backdrop_path: backdrop, 
@@ -89,13 +108,17 @@ const renderCard = responce => {
       loading.remove();
       tvShowsList.append(card);
     });
+    pagination.textContent = '';
+    if (responce.total_pages > 1) {
+      for (let i = 1; i <= responce.total_pages; i++) {
+        pagination.innerHTML += `<li><a href="#" class="pages">${i}</li>` 
+      };
+    }
   } else {
     loading.remove();
     tvShowsHead.textContent = 'По вашему запросу сериалов не найдено.'
-  } 
-
-
-}
+  }
+};
 
 //поиск и вывод результатов поиска
 
@@ -104,7 +127,7 @@ searchForm.addEventListener ('submit', event => {
   const value = searchFormInput.value.trim();
   if (value) {
     tvShows.append(loading);
-    new DBService().getSearchResult(value).then(renderCard);
+    dbService.getSearchResult(value).then(renderCard);
   }
   searchFormInput.value = '';
 })
@@ -115,17 +138,25 @@ searchForm.addEventListener ('submit', event => {
 
 //меню
 
+const closeDropdown = () => {
+  dropdown.forEach (item => {
+    item.classList.remove('active');
+  })
+};
+
 hamburger.addEventListener('click', () => {
-  leftMenu.classList.toggle('openMenu')
-  hamburger.classList.toggle('open')
-})
+  leftMenu.classList.toggle('openMenu');
+  hamburger.classList.toggle('open');
+  closeDropdown();
+});
 
 document.body.addEventListener('click', event => {
   if (!event.target.closest('.left-menu')) {
-    leftMenu.classList.remove('openMenu')
-    hamburger.classList.remove('open')
+    leftMenu.classList.remove('openMenu');
+    hamburger.classList.remove('open');
+    closeDropdown();
     }
-})
+});
 
 leftMenu.addEventListener('click', event => {
   event.preventDefault();
@@ -134,9 +165,34 @@ leftMenu.addEventListener('click', event => {
   if (dropdown) {
     dropdown.classList.toggle('active')
     leftMenu.classList.add('openMenu')
-    hamburger.classList.add('open')
+    hamburger.classList.add('open');
+    
   }
-})
+  if (target.closest('#top-rated')) {
+    tvShows.append(loading);
+    dbService.getTopRated ().then(responce => renderCard(responce, target));
+    
+  }
+  if (target.closest('#popular')) {
+    tvShows.append(loading);
+    dbService.getPopular ().then(responce => renderCard(responce, target));
+    
+  }
+  if (target.closest('#today')) {
+    tvShows.append(loading);
+    dbService.getToday ().then(responce => renderCard(responce, target));
+    
+  }
+  if (target.closest('#week')) {
+    tvShows.append(loading);
+    dbService.getWeek ().then(responce => renderCard(responce, target));
+    
+  }
+  if (target.closest('#search')) {
+    tvShowsList.textContent= '';
+    tvShowsHead.textContent = '';
+  }
+});
 
 //смена карточки
 
@@ -148,7 +204,7 @@ const swapAttrs = elem => {
       [img.src, img.dataset.backdrop] = [img.dataset.backdrop, img.src]
     }
   }
-}
+};
 
 tvShowsList.addEventListener('mouseover', swapAttrs);
 tvShowsList.addEventListener('mouseout', swapAttrs);
@@ -162,15 +218,17 @@ tvShowsList.addEventListener('click', event => {
   if (card) {
     tvShows.append(loading);
 
-    new DBService().getTvShow(card.dataset.id)
+    dbService.getTvShow(card.dataset.id)
       .then(responce => {
         
-        if (responce.backdrop_path) {
+        if (responce.poster_path) {
           tvCardImg.src = IMG_URL + responce.poster_path;
           tvCardImg.alt = responce.name;
           posterWrapper.classList.remove('hide'); 
+          modalContent.style.paddingLeft = '';
         } else {
           posterWrapper.classList.add('hide'); 
+          modalContent.style.paddingLeft = '25px';
         }
         modalTitle.textContent = responce.name; 
         // genresList.innerHTML = responce.genres.reduce((acc,item) => `${acc} <li>${item.name}</li>`,'');
@@ -184,10 +242,12 @@ tvShowsList.addEventListener('click', event => {
 
       })
       .then(() => {
-        loading.remove();
         modal.style.backgroundColor = 'rgba(0,0,0,0.8)'
         document.body.style.overfow='hidden'
         modal.classList.remove('hide')
+      })
+      .finally(() => {
+        loading.remove();
       })
 
   }
@@ -203,3 +263,12 @@ modal.addEventListener('click', event => {
   }
 })
 
+//пагинация
+
+pagination.addEventListener('click', event => {
+  event.preventDefault();
+  const targer = event.target;
+  if (target.classList.contains('pages')) {
+    
+  }
+})

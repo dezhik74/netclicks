@@ -522,6 +522,17 @@ main {
     width: 185px;
 }
 
+.pagination {
+    display: flex;
+    justify-content: center;
+    margin: 15px 0;
+}
+
+.pagination li {
+    padding: 0 5px;
+    margin: 0 5px;
+}
+
 .modal {
     position: fixed;
     top: 0;
