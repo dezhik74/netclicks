@@ -1,23 +1,27 @@
 const IMG_URL = "https://image.tmdb.org/t/p/w185_and_h278_bestv2";
 const API_KEY = "2e8b7d6b0b4e7f8d95a28f931ea2f5e8";
 const SERVER = "https://api.themoviedb.org/3";
-const leftMenu = document.querySelector('.left-menu')
-const hamburger = document.querySelector('.hamburger')
-const tvShowsList = document.querySelector('.tv-shows__list')
-const modal = document.querySelector('.modal')
-const tvShows = document.querySelector('.tv-shows')
-const tvCardImg = document.querySelector ('.tv-card__img')
-const modalTitle = document.querySelector('.modal__title')
-const genresList = document.querySelector('.genres-list')
-const rating = document.querySelector('.rating')
-const description = document.querySelector('.description')
-const modalLink = document.querySelector('.modal__link')
-const searchForm = document.querySelector('.search__form')
-const searchFormInput = document.querySelector('.search__form-input')
+
+const leftMenu = document.querySelector('.left-menu');
+const hamburger = document.querySelector('.hamburger');
+const tvShowsList = document.querySelector('.tv-shows__list');
+const tvShowsHead = document.querySelector('.tv-shows__head');
+const modal = document.querySelector('.modal');
+const tvShows = document.querySelector('.tv-shows');
+const tvCardImg = document.querySelector ('.tv-card__img');
+const modalTitle = document.querySelector('.modal__title');
+const genresList = document.querySelector('.genres-list');
+const rating = document.querySelector('.rating');
+const description = document.querySelector('.description');
+const modalLink = document.querySelector('.modal__link');
+const searchForm = document.querySelector('.search__form');
+const searchFormInput = document.querySelector('.search__form-input');
+const posterWrapper = document.querySelector('.poster__wrapper');
+
 
 
 const loading = document.createElement('div');
-loading.className = 'loading'
+loading.className = 'loading';
 
 
 
@@ -50,39 +54,46 @@ const DBService = class {
   }
 }
 
-console.log(new DBService().getSearchResult('Папа'));
+// console.log(new DBService().getSearchResult('Папа'));
 
 const renderCard = responce => {
 
   tvShowsList.textContent='';
 
-  responce.results.forEach(item => {
-    const {
-      backdrop_path: backdrop, 
-      name: title, 
-      poster_path: poster, 
-      vote_average: vote,
-      id
-    } = item;
-    const posterIMG = poster ? IMG_URL + poster : 'img/no-poster.jpg';
-    const backdropIMG = backdrop ? IMG_URL + backdrop : '';
-    const voteElem = vote ? `<span class="tv-card__vote">${vote}</span>`: '';
-    
-    const card = document.createElement ('li');
-    card.classList.add('tv-shows__item');
-    card.innerHTML = `
-      <a href="#" data-id=${id} class="tv-card">
-        ${voteElem}
-        <img class="tv-card__img"
-            src="${posterIMG}"
-            data-backdrop="${backdropIMG}"
-            alt="${title}">
-        <h4 class="tv-card__head">${title}</h4>
-      </a>
-    `;
+  if (responce.results.length) {
+    tvShowsHead.textContent = 'Результат поиска';
+    responce.results.forEach(item => {
+      const {
+        backdrop_path: backdrop, 
+        name: title, 
+        poster_path: poster, 
+        vote_average: vote,
+        id
+      } = item;
+      const posterIMG = poster ? IMG_URL + poster : 'img/no-poster.jpg';
+      const backdropIMG = backdrop ? IMG_URL + backdrop : '';
+      const voteElem = vote ? `<span class="tv-card__vote">${vote}</span>`: '';
+      
+      const card = document.createElement ('li');
+      card.classList.add('tv-shows__item');
+      card.innerHTML = `
+        <a href="#" data-id=${id} class="tv-card">
+          ${voteElem}
+          <img class="tv-card__img"
+              src="${posterIMG}"
+              data-backdrop="${backdropIMG}"
+              alt="${title}">
+          <h4 class="tv-card__head">${title}</h4>
+        </a>
+      `;
+      loading.remove();
+      tvShowsList.append(card);
+    });
+  } else {
     loading.remove();
-    tvShowsList.append(card);
-  });
+    tvShowsHead.textContent = 'По вашему запросу сериалов не найдено.'
+  } 
+
 
 }
 
@@ -149,13 +160,18 @@ tvShowsList.addEventListener('click', event => {
   const target = event.target
   const card = target.closest('.tv-card')
   if (card) {
+    tvShows.append(loading);
 
     new DBService().getTvShow(card.dataset.id)
       .then(responce => {
-        console.log(responce);
         
-        tvCardImg.src = IMG_URL + responce.poster_path;
-        tvCardImg.alt = responce.name;
+        if (responce.backdrop_path) {
+          tvCardImg.src = IMG_URL + responce.poster_path;
+          tvCardImg.alt = responce.name;
+          posterWrapper.classList.remove('hide'); 
+        } else {
+          posterWrapper.classList.add('hide'); 
+        }
         modalTitle.textContent = responce.name; 
         // genresList.innerHTML = responce.genres.reduce((acc,item) => `${acc} <li>${item.name}</li>`,'');
         genresList.innerHTML = '';
@@ -168,10 +184,10 @@ tvShowsList.addEventListener('click', event => {
 
       })
       .then(() => {
+        loading.remove();
         modal.style.backgroundColor = 'rgba(0,0,0,0.8)'
         document.body.style.overfow='hidden'
         modal.classList.remove('hide')
-
       })
 
   }
