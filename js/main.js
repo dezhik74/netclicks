@@ -54,7 +54,7 @@ const DBService = class {
   }
 
   getNextPage = page => {
-    this.getData (this.temp + '&page=' + page);
+    return this.getData (this.temp + '&page=' + page);
   }
 
   getTvShow = id => {
@@ -109,7 +109,7 @@ const renderCard = (responce, target) => {
       tvShowsList.append(card);
     });
     pagination.textContent = '';
-    if (responce.total_pages > 1) {
+    if (!target && responce.total_pages > 1) {
       for (let i = 1; i <= responce.total_pages; i++) {
         pagination.innerHTML += `<li><a href="#" class="pages">${i}</li>` 
       };
@@ -267,8 +267,9 @@ modal.addEventListener('click', event => {
 
 pagination.addEventListener('click', event => {
   event.preventDefault();
-  const targer = event.target;
+  const target = event.target;
   if (target.classList.contains('pages')) {
-    
+    tvShows.append(loading);
+    dbService.getNextPage(target.textContent).then(renderCard);
   }
 })
